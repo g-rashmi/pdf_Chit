@@ -1,1 +1,1 @@
-export  const b_url="https://nlp-assign.onrender.com"
+export  const b_url="https://pdf-chit.onrender.com"
