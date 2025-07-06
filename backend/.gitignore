@@ -1,0 +1,10 @@
+
+.env
+
+
+uploads/
+
+faiss_index/
+
+
+venv/

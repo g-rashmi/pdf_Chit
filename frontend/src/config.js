@@ -1,0 +1,1 @@
+export  const b_url="https://nlp-assign.onrender.com"
