@@ -12,7 +12,6 @@ from dotenv import load_dotenv
 import shutil
 import os
 
-# Load environment variables
 load_dotenv()
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 MONGO_URL = os.getenv("MONGO_URL")

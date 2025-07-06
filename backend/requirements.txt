@@ -2,7 +2,7 @@ chromadb
 faiss-cpu
 fastapi
 fastapi[standard]
-google-generativeai==0.3.2
+google-generativeai
 langchain
 langchain-community
 langchain-google-genai
