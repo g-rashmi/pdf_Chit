@@ -101,3 +101,7 @@ Answer:"""
     })
 
     return {"answer": result['output_text']}
+
+@app.get("/")
+def read_root():
+    return {"message": "PDF Q&A App is running!"}
