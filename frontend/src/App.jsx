@@ -8,13 +8,29 @@ import { AiOutlinePlus } from "react-icons/ai";
 import { FaFilePdf } from "react-icons/fa";
 import axios from "axios";
 import CircularProgress from "@mui/material/CircularProgress";
+import { useEffect } from "react";
+
 
 function App() {
   const [filen, setfile] = useState("");
   const [question, setQuestion] = useState("");
   const [chat, setChat] = useState([]);
   const [loader, setLoader] = useState(false);
+const [serverWaking, setServerWaking] = useState(true);
 
+useEffect(() => {
+  const pingServer = async () => {
+    try {
+      await axios.get(`${b_url}/healthz`);
+    } catch (error) {
+      console.error("server is starting ..wait...");
+      console.log(error);
+    } finally {
+      setServerWaking(false);
+    }
+  };
+  pingServer();
+}, []);
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file || file.type !== "application/pdf") {
@@ -68,7 +84,24 @@ function App() {
     }
   };
 
+  if (serverWaking) {
   return (
+    <div style={{
+      height: "100vh",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      flexDirection: "column"
+    }}>
+      <CircularProgress />
+      
+    </div>
+  );
+}
+
+  return (
+
+
     <div
       style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
     >
