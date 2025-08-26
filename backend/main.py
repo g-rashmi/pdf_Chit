@@ -49,14 +49,7 @@ async def upload_pdf(file: UploadFile = File(...)):
 
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
     chunks = text_splitter.split_documents(docs)
-    await qa_pdf_collection.delete_many({"filename": file.filename})
-    try :
-     await qa_pdf_collection.insert_one({
-        "filename": file.filename,
-        "qa_pairs": [{"iii": "jjj"}]
-    })
-    except Exception as e:
-     print(f"Error inserting into pdf_qa: {e}")
+    
 
     
     await chunks_collection.delete_many({"filename": file.filename})
@@ -68,6 +61,13 @@ async def upload_pdf(file: UploadFile = File(...)):
             "chunk_text": chunk.page_content
             
         })
+    await qa_pdf_collection.delete_many({"filename": file.filename})
+   
+    await qa_pdf_collection.insert_one({
+        "filename": file.filename,
+        "qa_pairs": [{"iii": "jjj"}]
+    })
+    
 
     return {"message": "PDF uploaded and processed", "filename": file.filename}
 
