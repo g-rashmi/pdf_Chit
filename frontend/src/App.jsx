@@ -193,7 +193,7 @@ qaData.forEach((pair, index) => {
             </div>
 <div>  
   
-           <Button variant="outlined" onClick={generate_pdf}>Export Pdf</Button></div>
+           <Button variant="outlined" onClick={generate_pdf}>Export QA Pdf</Button></div>
             </div>
           </div>
         </Toolbar>
