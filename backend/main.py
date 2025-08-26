@@ -54,7 +54,7 @@ async def upload_pdf(file: UploadFile = File(...)):
     await qa_pdf_collection.delete_many({"filename": file.filename})
     await qa_pdf_collection.insert_one({
        "filename":file.filename,
-       "qa_pairs":[] 
+       "qa_pairs":[{"iii":"jjj"}] 
    })
     
     await chunks_collection.delete_many({"filename": file.filename})
