@@ -55,7 +55,7 @@ function App() {
   const generate_pdf=async()=>{
     try{
 
-const res = await axios.get(`http://127.0.0.1:8000/export-pdf?filename=${filen}`);
+const res = await axios.get(`${b_url}/export-pdf?filename=${filen}`);
 const qaData = res.data.qa_pairs;
 console.log(qaData);
 const doc=new jsPDF();
