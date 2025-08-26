@@ -1,5 +1,8 @@
 import React, { useState } from "react";
 import { b_url } from "./config";
+import jsPDF from 'jspdf';
+
+import Button from "@mui/material/Button";
 import AppBar from "@mui/material/AppBar";
 import ReactMarkdown from "react-markdown";
 import Toolbar from "@mui/material/Toolbar";
@@ -48,6 +51,41 @@ function App() {
       console.error(error);
     }
   };
+
+  const generate_pdf=async()=>{
+    try{
+
+const res = await axios.get(`http://127.0.0.1:8000/export-pdf?filename=${filen}`);
+const qaData = res.data.qa_pairs;
+console.log(qaData);
+const doc=new jsPDF();
+let y=10; 
+doc.setFontSize(16);
+doc.text("Q&A Summary",10,y);
+y+=10;
+
+qaData.forEach((pair, index) => {
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text(`Q${index + 1}: ${pair.question}`, 10, y);
+      y += 8;
+
+      doc.setFont("helvetica", "normal"); 
+
+      const lines = doc.splitTextToSize(`A${index + 1}: ${pair.answer}`, 180);
+      doc.text(lines, 10, y);
+      y += lines.length * 8;
+     if (y > 270) {
+        doc.addPage();
+        y = 10;
+      }
+    });
+
+    doc.save("qa_summary.pdf"); 
+    }catch(error){
+      console.log(error)
+    }
+  }
 
   const handleSend = async () => {
     if (!filen) {
@@ -98,6 +136,10 @@ function App() {
     );
   }
 
+
+  
+
+  
   return (
     <div
       style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
@@ -118,6 +160,9 @@ function App() {
           </span>
 
           <div>
+            <div style={{display:"flex",gap:"20px"}}>
+<div>
+
             <input
               type="file"
               id="fileUpload"
@@ -125,7 +170,9 @@ function App() {
               accept="application/pdf"
               onChange={handleFileChange}
             />
-            <label
+           
+
+              <label
               htmlFor="fileUpload"
               style={{
                 display: "flex",
@@ -143,6 +190,11 @@ function App() {
               <AiOutlinePlus size={18} />
               {filen ? "" : "Upload PDF"}
             </label>
+            </div>
+<div>  
+  
+           <Button variant="outlined" onClick={generate_pdf}>Export Pdf</Button></div>
+            </div>
           </div>
         </Toolbar>
       </AppBar>

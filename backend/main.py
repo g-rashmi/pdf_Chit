@@ -2,6 +2,10 @@ from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.chains.question_answering import load_qa_chain
+from fastapi import Query
+from fastapi.responses import FileResponse
+import tempfile
+from fpdf import FPDF
 from langchain.prompts import PromptTemplate
 from langchain.document_loaders import PyMuPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -32,6 +36,7 @@ app.add_middleware(
 client = AsyncIOMotorClient(MONGO_URL)
 db = client["pdf_db"]
 chunks_collection = db["pdf_chunks"]
+qa_pdf_collection=db["q_a"];
 
 
 @app.post("/upload")
@@ -46,15 +51,20 @@ async def upload_pdf(file: UploadFile = File(...)):
 
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
     chunks = text_splitter.split_documents(docs)
-
-   
+    await qa_pdf_collection.delete_many({"filename": file.filename})
+    await qa_pdf_collection.insert_one({
+       "filename":file.filename,
+       "qa_pairs":[] 
+   })
+    
     await chunks_collection.delete_many({"filename": file.filename})
 
     for idx, chunk in enumerate(chunks):
-        await chunks_collection.insert_one({
+        await chunks_collection.insert_many({
             "filename": file.filename,
             "chunk_index": idx,
             "chunk_text": chunk.page_content
+            
         })
 
     return {"message": "PDF uploaded and processed", "filename": file.filename}
@@ -77,7 +87,6 @@ async def ask_question(filename: str = Form(...), question: str = Form(...)):
         google_api_key=GOOGLE_API_KEY,
         temperature=0.7,
     )
-
   
     prompt = PromptTemplate(
         input_variables=["context", "question"],
@@ -99,8 +108,32 @@ Answer:"""
         "input_documents": docs,
         "question": question
     })
+    await qa_pdf_collection.update_one(
+    {"filename": filename},
+    {
+        "$push": {
+            "qa_pairs": {
+                "question": question,
+                "answer": result["output_text"]
+            }
+        }
+    },
+    upsert=True
+)
+    updated_doc = await qa_pdf_collection.find_one({"filename": filename})
+    print(updated_doc.get("qa_pairs", []))
 
     return {"answer": result['output_text']}
+
+
+@app.get("/export-pdf")
+async def export_pdf(filename: str = Query(...)):
+    doc = await qa_pdf_collection.find_one({"filename": filename})
+    if not doc or "qa_pairs" not in doc:
+        return {"qa_pairs": []}
+    return {"qa_pairs": doc["qa_pairs"]}
+    
+
 
 @app.get("/")
 def read_root():
@@ -110,3 +143,6 @@ def health_check():
     return {"status": "ok"}
 
 
+@app.get("/hii")
+def need():
+     return "hii"
