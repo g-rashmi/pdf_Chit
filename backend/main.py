@@ -65,7 +65,7 @@ async def upload_pdf(file: UploadFile = File(...)):
    
     await qa_pdf_collection.insert_one({
         "filename": file.filename,
-        "qa_pairs": [{"iii": "jjj"}]
+       
     })
     
 
