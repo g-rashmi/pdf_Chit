@@ -36,7 +36,7 @@ app.add_middleware(
 client = AsyncIOMotorClient(MONGO_URL)
 db = client["pdf_db"]
 chunks_collection = db["pdf_chunks"]
-qa_pdf_collection=db["q_a"];
+qa_pdf_collection=db["pdf_qa"];
 
 
 @app.post("/upload")
