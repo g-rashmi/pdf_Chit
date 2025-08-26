@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { b_url } from "./config";
+import { CgRecord } from "react-icons/cg";
 import jsPDF from 'jspdf';
-
+import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition'
+import { CiMicrophoneOn } from "react-icons/ci";
 import Button from "@mui/material/Button";
 import AppBar from "@mui/material/AppBar";
 import ReactMarkdown from "react-markdown";
@@ -14,7 +16,15 @@ import CircularProgress from "@mui/material/CircularProgress";
 import { useEffect } from "react";
 
 function App() {
+   const {
+    transcript,
+    listening,
+    resetTranscript,
+    browserSupportsSpeechRecognition
+  } = useSpeechRecognition();
+
   const [filen, setfile] = useState("");
+  const [start,setstart]=useState(false);
   const [question, setQuestion] = useState("");
   const [chat, setChat] = useState([]);
   const [loader, setLoader] = useState(false);
@@ -255,6 +265,8 @@ qaData.forEach((pair, index) => {
             }}
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
           />
+<div>
+  <div>
           <TbSend2
             onClick={handleSend}
             style={{
@@ -267,6 +279,36 @@ qaData.forEach((pair, index) => {
               color: "gray",
             }}
           />
+          </div>
+          <div> {start==false?(<CiMicrophoneOn style={{   position: "absolute",
+              right: "40px",
+              top: "50%",
+              transform: "translateY(-50%)",
+              cursor: "pointer",
+              fontSize: "22px",
+              color: "gray",}} onClick={()=>{
+                resetTranscript();
+SpeechRecognition.startListening({ continuous: false, language: 'en-IN' })
+
+setstart(true);}
+                
+               
+              }
+               />):<CgRecord style={{position: "absolute",
+              right: "40px",
+              top: "50%",
+              transform: "translateY(-50%)",
+              cursor: "pointer",
+              fontSize: "22px",
+              color: "gray",}} onClick={()=>{
+SpeechRecognition.stopListening();
+setstart(false)
+setQuestion(transcript);
+              }} />}</div>
+         
+          </div>
+
+         
         </div>
       </div>
     </div>
