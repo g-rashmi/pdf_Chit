@@ -3,9 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.chains.question_answering import load_qa_chain
 from fastapi import Query
-from fastapi.responses import FileResponse
-import tempfile
-from fpdf import FPDF
+
 from langchain.prompts import PromptTemplate
 from langchain.document_loaders import PyMuPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -15,7 +13,7 @@ from tempfile import NamedTemporaryFile
 from dotenv import load_dotenv
 import shutil
 import os
-import uvicorn
+
 load_dotenv()
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 MONGO_URL = os.getenv("MONGO_URL")
@@ -52,15 +50,19 @@ async def upload_pdf(file: UploadFile = File(...)):
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
     chunks = text_splitter.split_documents(docs)
     await qa_pdf_collection.delete_many({"filename": file.filename})
-    await qa_pdf_collection.insert_one({
-       "filename":file.filename,
-       "qa_pairs":[{"iii":"jjj"}] 
-   })
+    try :
+     await qa_pdf_collection.insert_one({
+        "filename": file.filename,
+        "qa_pairs": [{"iii": "jjj"}]
+    })
+    except Exception as e:
+     print(f"Error inserting into pdf_qa: {e}")
+
     
     await chunks_collection.delete_many({"filename": file.filename})
 
     for idx, chunk in enumerate(chunks):
-        await chunks_collection.insert_many({
+        await chunks_collection.insert_one({
             "filename": file.filename,
             "chunk_index": idx,
             "chunk_text": chunk.page_content
@@ -120,8 +122,7 @@ Answer:"""
     },
     upsert=True
 )
-    updated_doc = await qa_pdf_collection.find_one({"filename": filename})
-    print(updated_doc.get("qa_pairs", []))
+   
 
     return {"answer": result['output_text']}
 
