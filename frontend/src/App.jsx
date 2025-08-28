@@ -18,9 +18,9 @@ import { useEffect } from "react";
 function App() {
    const {
     transcript,
-    listening,
+   
     resetTranscript,
-    browserSupportsSpeechRecognition
+   
   } = useSpeechRecognition();
 
   const [filen, setfile] = useState("");
@@ -43,7 +43,15 @@ function App() {
     pingServer();
   }, []);
   const handleFileChange = async (e) => {
+    
     const file = e.target.files[0];
+    const mx=5*1024*1024; 
+    console.log(file.size);
+    if(file.size>mx){
+      console.log(file.size);
+      alert("file size exceeded");
+      return;
+    }
     if (!file || file.type !== "application/pdf") {
       alert("Please upload a valid PDF file.");
       return;
@@ -179,7 +187,8 @@ qaData.forEach((pair, index) => {
               style={{ display: "none" }}
               accept="application/pdf"
               onChange={handleFileChange}
-            />
+            /> 
+
            
 
               <label
@@ -251,7 +260,9 @@ qaData.forEach((pair, index) => {
           <input
             type="text"
             placeholder="Ask your question"
-            value={question}
+   
+   
+            value={start ? transcript : question}
             onChange={(e) => setQuestion(e.target.value)}
             style={{
               width: "100%",
@@ -290,7 +301,9 @@ qaData.forEach((pair, index) => {
                 resetTranscript();
 SpeechRecognition.startListening({ continuous: false, language: 'en-IN' })
 
-setstart(true);}
+setstart(true); 
+setQuestion(transcript);
+}
                 
                
               }
