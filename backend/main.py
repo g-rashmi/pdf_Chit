@@ -5,7 +5,8 @@ from langchain.chains.question_answering import load_qa_chain
 from fastapi import Query
 
 from langchain.prompts import PromptTemplate
-from langchain.document_loaders import PyMuPDFLoader
+from langchain_community.document_loaders import PyMuPDFLoader
+
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.schema import Document
 from motor.motor_asyncio import AsyncIOMotorClient
