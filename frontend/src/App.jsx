@@ -262,7 +262,7 @@ qaData.forEach((pair, index) => {
             placeholder="Ask your question"
    
    
-            value={start ? transcript : question}
+            value={question}
             onChange={(e) => setQuestion(e.target.value)}
             style={{
               width: "100%",
@@ -317,6 +317,7 @@ setQuestion(transcript);
 SpeechRecognition.stopListening();
 setstart(false)
 setQuestion(transcript);
+console.log(`hii this is ${question}`)
               }} />}</div>
          
           </div>
