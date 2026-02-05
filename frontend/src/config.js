@@ -1,1 +1,1 @@
-export  const b_url="http://localhost:8000"
+export  const b_url="https://pdf-chit.onrender.com"
