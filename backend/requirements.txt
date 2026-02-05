@@ -3,7 +3,7 @@ uvicorn[standard]
 python-dotenv
 pymupdf
 motor
-langchain_text_splitterssss
+langchain_text_splitters
 shutilwhich
 langchain_community
 langchain
