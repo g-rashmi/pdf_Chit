@@ -1,25 +1,39 @@
+
+
+
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.chains.question_answering import load_qa_chain
+
 from fastapi import Query
+from langchain_core.prompts import ChatPromptTemplate
 
-from langchain.prompts import PromptTemplate
+import uvicorn
+from langchain_core.vectorstores import InMemoryVectorStore
+
+
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_community.document_loaders import PyMuPDFLoader
-
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.schema import Document
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from motor.motor_asyncio import AsyncIOMotorClient
 from tempfile import NamedTemporaryFile
 from dotenv import load_dotenv
-import shutil
-import os
 
+from langchain_classic.chains import create_retrieval_chain
+from langchain_classic.chains.combine_documents import create_stuff_documents_chain
+import shutil
+from langchain.tools import tool
+from langchain.messages import HumanMessage
+import os
 load_dotenv()
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
+os.environ["GOOGLE_API_KEY"]=os.getenv("GOOGLE_API_KEY")
+embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
+
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 MONGO_URL = os.getenv("MONGO_URL")
 
-
+vector_store = InMemoryVectorStore(embeddings)
 app = FastAPI()
 
 
@@ -32,11 +46,11 @@ app.add_middleware(
 )
 
 
-client = AsyncIOMotorClient(MONGO_URL)
-db = client["pdf_db"]
-chunks_collection = db["pdf_chunks"]
-qa_pdf_collection=db["pdf_qa"]
+client = AsyncIOMotorClient("mongodb://localhost:27017")
 
+db = client["pdf_db"]
+
+qa_pdf_collection=db["pdf_qa"]
 
 @app.post("/upload")
 async def upload_pdf(file: UploadFile = File(...)):
@@ -51,79 +65,51 @@ async def upload_pdf(file: UploadFile = File(...)):
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
     chunks = text_splitter.split_documents(docs)
     
-
+    for doc in chunks:
+        doc.metadata["filename"] = file.filename
+    vector_store.add_documents(documents=chunks)
     
-    await chunks_collection.delete_many({"filename": file.filename})
-
-    for idx, chunk in enumerate(chunks):
-        await chunks_collection.insert_one({
-            "filename": file.filename,
-            "chunk_index": idx,
-            "chunk_text": chunk.page_content
-            
-        })
-    await qa_pdf_collection.delete_many({"filename": file.filename})
-   
-    
-
-    
-
     return {"message": "PDF uploaded and processed", "filename": file.filename}
 
 
 @app.post("/ask")
 async def ask_question(filename: str = Form(...), question: str = Form(...)):
-   
-    cursor = chunks_collection.find({"filename": filename})
-    docs = []
-    async for doc in cursor:
-        docs.append(Document(page_content=doc["chunk_text"]))
 
-    if not docs:
-        return {"error": "No content found. Please upload the PDF again."}
-
-
-    llm = ChatGoogleGenerativeAI(
-        model="gemini-1.5-flash",
-        google_api_key=GOOGLE_API_KEY,
-        temperature=0.7,
-    )
-  
-    prompt = PromptTemplate(
-        input_variables=["context", "question"],
-        template="""
-Answer the question using the context below.
-
-Context:
-{context}
-
-Question: {question}
-Answer:"""
+ llm = ChatGoogleGenerativeAI(
+        model="gemini-flash-latest", 
+        temperature=0
     )
 
-    
-    chain = load_qa_chain(llm=llm, chain_type="stuff", prompt=prompt)
-
-
-    result = chain.invoke({
-        "input_documents": docs,
-        "question": question
-    })
-    await qa_pdf_collection.update_one(
-    {"filename": filename},
-    {
-        "$push": {
-            "qa_pairs": {
-                "question": question,
-                "answer": result["output_text"]
-            }
-        }
-    },
-    upsert=True
+ retriever = vector_store.as_retriever(
+    search_kwargs={
+        "filter": lambda doc: doc.metadata.get("filename") == filename,
+        "k": 5
+    }
 )
-   
 
-    return {"answer": result['output_text']}
+ system_prompt = (
+        "You are an assistant for question-answering tasks. "
+        "Use the following pieces of retrieved context to answer "
+        "the question. If you don't know the answer, say that you "
+        "don't know. Keep the "
+        "answer concise."
+        "\n\n"
+        "{context}"
+    )
+
+ prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", system_prompt),
+            ("human", "{input}"),
+        ]
+    )
+
+ question_answer_chain = create_stuff_documents_chain(llm, prompt)
+ rag_chain = create_retrieval_chain(retriever, question_answer_chain)
+ response = rag_chain.invoke({"input": question,})
+ 
+ return response
+
 
 
 @app.get("/export-pdf")
@@ -146,3 +132,8 @@ def health_check():
 @app.get("/hii")
 def need():
      return "hii"
+
+
+
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
