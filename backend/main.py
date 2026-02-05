@@ -1,6 +1,5 @@
 
 
-
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -22,8 +21,7 @@ from dotenv import load_dotenv
 from langchain_classic.chains import create_retrieval_chain
 from langchain_classic.chains.combine_documents import create_stuff_documents_chain
 import shutil
-from langchain.tools import tool
-from langchain.messages import HumanMessage
+
 import os
 load_dotenv()
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
@@ -108,6 +106,19 @@ async def ask_question(filename: str = Form(...), question: str = Form(...)):
  rag_chain = create_retrieval_chain(retriever, question_answer_chain)
  response = rag_chain.invoke({"input": question,})
  
+ await qa_pdf_collection.update_one(
+    {"filename": filename},
+    {
+        "$push": {
+            "qa_pairs": {
+                "question": question,
+                "answer":response["answer"]
+            }
+        }
+    },
+    upsert=True
+)
+ 
  return response
 
 
@@ -137,3 +148,4 @@ def need():
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+
