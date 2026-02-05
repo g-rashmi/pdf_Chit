@@ -68,15 +68,15 @@ async def upload_pdf(file: UploadFile = File(...)):
     vector_store.add_documents(documents=chunks)
     
     return {"message": "PDF uploaded and processed", "filename": file.filename}
-
+llm = ChatGoogleGenerativeAI(
+        model="gemini-flash-latest", 
+        temperature=0
+    )
 
 @app.post("/ask")
 async def ask_question(filename: str = Form(...), question: str = Form(...)):
 
- llm = ChatGoogleGenerativeAI(
-        model="gemini-flash-latest", 
-        temperature=0
-    )
+ 
 
  retriever = vector_store.as_retriever(
     search_kwargs={
