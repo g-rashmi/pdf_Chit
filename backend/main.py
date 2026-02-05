@@ -44,7 +44,7 @@ app.add_middleware(
 )
 
 
-client = AsyncIOMotorClient("mongodb://localhost:27017")
+client = AsyncIOMotorClient(MONGO_URL)
 
 db = client["pdf_db"]
 
